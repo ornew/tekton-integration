@@ -1,0 +1,8 @@
+apiVersion: integrations.tekton.ornew.io/v1alpha1
+kind: Notification
+metadata:
+  name: github-app
+spec:
+  providerRef:
+    name: github-app
+  suspend: false
