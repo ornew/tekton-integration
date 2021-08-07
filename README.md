@@ -1,6 +1,6 @@
 # Tekton Integrations
 
-This CRD provides Tekton to work with third-party systems (GitHub, Slack, etc).
+It provides functions to integrate Tekton with other systems (GitHub, Slack, etc).
 
 - `Provider` presents credentials and settings for integrating with external systems.
 - `Notification` presents how to notify the result of Run.
