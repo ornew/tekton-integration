@@ -8,8 +8,7 @@ It provides functions to integrate Tekton with other systems (GitHub, Slack, etc
 For example:
 
 ```yaml
----
-apiVersion: integrations.tekton.dev/v1alpha1
+apiVersion: integrations.tekton.ornew.io/v1alpha1
 kind: Provider
 metadata:
   name: github-app
@@ -20,9 +19,8 @@ spec:
     privateKey:
       secretRef:
         name: github-app
-        key: private-key.pem
 ---
-apiVersion: integrations.tekton.dev/v1alpha1
+apiVersion: integrations.tekton.ornew.io/v1alpha1
 kind: Notification
 metadata:
   name: github-commit-statuses
