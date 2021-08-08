@@ -18,12 +18,12 @@ package providers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/apis"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/bradleyfalzon/ghinstallation"
@@ -35,26 +35,10 @@ import (
 )
 
 const (
-	GitHubCommitStatusPending    = "pending"
-	GitHubCommitStatusFailed     = "failed"
-	GitHubCommitStatusSuccessful = "successful"
+	annotationGitHubOwner = "integrations.tekton.ornew.io/github-owner"
+	annotationGitHubRepo  = "integrations.tekton.ornew.io/github-repo"
+	annotationGitHubSHA   = "integrations.tekton.ornew.io/github-sha"
 )
-
-func toGithubCommitStatus(status corev1.ConditionStatus) string {
-	switch status {
-	case corev1.ConditionUnknown:
-		return GitHubCommitStatusPending
-	case corev1.ConditionFalse:
-		return GitHubCommitStatusFailed
-	case corev1.ConditionTrue:
-		return GitHubCommitStatusSuccessful
-	}
-	return GitHubCommitStatusPending
-}
-
-type Provider interface {
-	Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) error
-}
 
 type GitHubApp struct {
 	AppId      int64
@@ -65,7 +49,7 @@ type GitHubApp struct {
 func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, error) {
 	s := p.Spec.GitHubApp
 	if s == nil {
-		return nil, errors.New(".spec.githubApp is required")
+		return nil, NewInvalidProviderSpecError("missing value .githubApp")
 	}
 	var key []byte
 	if s.PrivateKey.SecretRef != nil {
@@ -75,18 +59,18 @@ func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*
 			Name:      s.PrivateKey.SecretRef.Name,
 		}
 		if err := k.Get(ctx, ref, &secret); err != nil {
-			return nil, fmt.Errorf("failed to get secret: %v", ref)
+			return nil, NewNotFoundPrivateKeyError(fmt.Sprintf("failed to get secret: %v", err))
 		}
 		if secret.Data == nil {
-			return nil, fmt.Errorf("failed to get private key because data is nothing: %v", ref)
+			return nil, NewNotFoundPrivateKeyError("data not found in secret")
 		}
 		if pem, ok := secret.Data["private-key.pem"]; ok {
 			key = pem
 		} else {
-			return nil, errors.New("private-key.pem is not found in the secret")
+			return nil, NewNotFoundPrivateKeyError("missing key private-key.pem")
 		}
 	} else {
-		return nil, errors.New("secretRef is missing")
+		return nil, NewInvalidProviderSpecError("missing valid values in .privateKey")
 	}
 	return &GitHubApp{
 		AppId:      s.AppId,
@@ -95,22 +79,48 @@ func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*
 	}, nil
 }
 
-func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) error {
-	log := logr.FromContext(ctx)
-	log.Info("notifications github")
-	owner := ""
-	repo := ""
-	revision := ""
-
-	if len(owner) < 0 {
-		return nil // FIXME TODO
+func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) *ProviderError {
+	log := logr.FromContext(ctx).WithName("providers.githubapp").
+		WithValues("providerType", "GitHubApp", "pipelineRun", pr.Name)
+	contextID := pr.Annotations[annotationContextID]
+	if len(contextID) < 1 {
+		ref := pr.Spec.PipelineRef
+		if ref != nil && len(ref.Name) > 0 {
+			contextID = ref.Name
+		}
+		return NewFailedValidationError("context-id or pipelineRef.name is required")
+	}
+	owner := pr.Annotations[annotationGitHubOwner]
+	repo := pr.Annotations[annotationGitHubRepo]
+	revision := pr.Annotations[annotationGitHubSHA]
+	if len(owner) < 1 || len(repo) < 1 || len(revision) < 1 {
+		log.Info("missing annotations")
+		return NewFailedValidationError(fmt.Sprintf("required annotations: %s=%s %s=%s %s=%s",
+			annotationGitHubOwner, owner,
+			annotationGitHubRepo, repo,
+			annotationGitHubSHA, revision,
+		))
+	}
+	cond := pr.Status.GetCondition(apis.ConditionSucceeded)
+	if cond == nil {
+		log.Info("PipelineRun has not condition, ignored")
+		return nil
+	}
+	state := toGithubCommitStatus(cond.Status)
+	description := cond.Reason
+	context := fmt.Sprintf("tekton: %s", contextID)
+	targetURL := "" // TODO will support tekton dashboard or custom link
+	status := &github.RepoStatus{
+		State:       &state, // pending, success, error, or failure
+		TargetURL:   &targetURL,
+		Description: &description, // max len 140
+		Context:     &context,
 	}
 
 	tr := http.DefaultTransport
 	atr, err := ghinstallation.NewAppsTransport(tr, a.AppId, a.PrivateKey)
 	if err != nil {
-		log.Error(err, "failed to get GitHub App transport")
-		return err
+		return NewRuntimeError(fmt.Sprintf("failed to get GitHub App transport: %v", err))
 	}
 	if a.BaseURL != nil {
 		atr.BaseURL = *a.BaseURL
@@ -118,8 +128,7 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	bearerClient := github.NewClient(&http.Client{Transport: atr})
 	ins, _, err := bearerClient.Apps.FindRepositoryInstallation(ctx, owner, repo)
 	if err != nil || ins.ID == nil {
-		log.Error(err, "failed to get GitHub App installation")
-		return err
+		return NewRuntimeError(fmt.Sprintf("failed to find GitHub App installation: %v", err))
 	}
 	itr := ghinstallation.NewFromAppsTransport(atr, *ins.ID)
 
@@ -127,19 +136,34 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	if a.BaseURL != nil {
 		client, err = github.NewEnterpriseClient(itr.BaseURL, itr.BaseURL, &http.Client{Transport: itr})
 		if err != nil {
-			log.Error(err, "failed to get GitHub Enterprise API client")
-			return err
+			return NewRuntimeError(fmt.Sprintf("failed to get GitHub Enterprise API client: %v", err))
 		}
 	} else {
 		client = github.NewClient(&http.Client{Transport: itr})
 	}
-	status := &github.RepoStatus{
-		State:       new(string), // pending, success, error, or failure
-		TargetURL:   new(string),
-		Description: new(string), // max len 140
-		Context:     new(string),
+	status, _, err = client.Repositories.CreateStatus(ctx, owner, repo, revision, status)
+	if err != nil {
+		return NewRuntimeError(fmt.Sprintf("failed to set GitHub commit status: %v", err))
 	}
-	client.Repositories.CreateStatus(ctx, owner, repo, revision, status)
-
+	log.Info("set commit status", "status", status)
 	return nil
+}
+
+const (
+	GitHubCommitStatusPending    = "pending"
+	GitHubCommitStatusSuccessful = "success"
+	GitHubCommitStatusError      = "error"
+	GitHubCommitStatusFailure    = "failure"
+)
+
+func toGithubCommitStatus(status corev1.ConditionStatus) string {
+	switch status {
+	case corev1.ConditionUnknown:
+		return GitHubCommitStatusPending
+	case corev1.ConditionTrue:
+		return GitHubCommitStatusSuccessful
+	case corev1.ConditionFalse:
+		return GitHubCommitStatusError
+	}
+	return GitHubCommitStatusFailure
 }
