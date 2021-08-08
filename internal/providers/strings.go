@@ -16,16 +16,20 @@ limitations under the License.
 
 package providers
 
-import (
-	"context"
+const redacted = "[REDACTED]"
 
-	pipelinesv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-)
+var redactedBytes = []byte("\"" + redacted + "\"")
 
-const (
-	annotationContextID = "integrations.tekton.ornew.io/context-id"
-)
+type SecretBytes []byte
 
-type Provider interface {
-	Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) *ProviderError
+func (s *SecretBytes) String() string {
+	return redacted
+}
+
+func (s *SecretBytes) GoString() string {
+	return redacted
+}
+
+func (s *SecretBytes) MarshalJSON() ([]byte, error) {
+	return redactedBytes, nil
 }

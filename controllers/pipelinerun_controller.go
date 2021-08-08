@@ -132,10 +132,11 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				continue
 			}
 			if err != nil {
-				logp.Error(err, "failed to create the provider instance")
+				logp.Error(err, "failed to create the provider app")
 				continue
 			}
-			if err = app.Notify(ctx, &pr); err != nil {
+			log.Info("get provider app", "app", app)
+			if err := app.Notify(ctx, &pr); err != nil {
 				logp.Error(err, "failed to notify")
 			}
 		}

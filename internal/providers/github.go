@@ -42,9 +42,11 @@ const (
 
 type GitHubApp struct {
 	AppId      int64
-	PrivateKey []byte
+	PrivateKey SecretBytes
 	BaseURL    *string
 }
+
+var _ Provider = (*GitHubApp)(nil)
 
 func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, error) {
 	s := p.Spec.GitHubApp
@@ -94,7 +96,6 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	repo := pr.Annotations[annotationGitHubRepo]
 	revision := pr.Annotations[annotationGitHubSHA]
 	if len(owner) < 1 || len(repo) < 1 || len(revision) < 1 {
-		log.Info("missing annotations")
 		return NewFailedValidationError(fmt.Sprintf("required annotations: %s=%s %s=%s %s=%s",
 			annotationGitHubOwner, owner,
 			annotationGitHubRepo, repo,
@@ -103,7 +104,7 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	}
 	cond := pr.Status.GetCondition(apis.ConditionSucceeded)
 	if cond == nil {
-		log.Info("PipelineRun has not condition, ignored")
+		log.V(1).Info("PipelineRun has not condition, ignored")
 		return nil
 	}
 	state := toGithubCommitStatus(cond.Status)
@@ -145,7 +146,7 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	if err != nil {
 		return NewRuntimeError(fmt.Sprintf("failed to set GitHub commit status: %v", err))
 	}
-	log.Info("set commit status", "status", status)
+	log.V(2).Info("set commit status", "status", status)
 	return nil
 }
 

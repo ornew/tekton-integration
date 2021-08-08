@@ -216,7 +216,7 @@ func TestNewGitHubApp(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, a.AppId, int64(1))
-				assert.Equal(t, a.PrivateKey, []byte("private-key"))
+				assert.Equal(t, a.PrivateKey, SecretBytes("private-key"))
 				assert.Equal(t, *a.BaseURL, "https://github.enterpise")
 			}
 		})
