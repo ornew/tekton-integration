@@ -18,9 +18,17 @@ package providers
 
 const redacted = "[REDACTED]"
 
-var redactedBytes = []byte("\"" + redacted + "\"")
+var redactedJSONBytes = []byte("\"" + redacted + "\"")
 
-type SecretBytes []byte
+type SecretBytes struct {
+	data []byte
+}
+
+func NewSecretBytes(data []byte) SecretBytes {
+	return SecretBytes{
+		data: data,
+	}
+}
 
 func (s *SecretBytes) String() string {
 	return redacted
@@ -31,5 +39,43 @@ func (s *SecretBytes) GoString() string {
 }
 
 func (s *SecretBytes) MarshalJSON() ([]byte, error) {
-	return redactedBytes, nil
+	return redactedJSONBytes, nil
+}
+
+func (s *SecretBytes) GetNoRedacted() []byte {
+	return s.data
+}
+
+func (s *SecretBytes) GetNoRedactedString() string {
+	return string(s.data)
+}
+
+type SecretString struct {
+	data string
+}
+
+func NewSecretString(data string) SecretString {
+	return SecretString{
+		data: data,
+	}
+}
+
+func (s *SecretString) String() string {
+	return redacted
+}
+
+func (s *SecretString) GoString() string {
+	return redacted
+}
+
+func (s *SecretString) MarshalJSON() ([]byte, error) {
+	return redactedJSONBytes, nil
+}
+
+func (s *SecretString) GetNoRedacted() []byte {
+	return []byte(s.data)
+}
+
+func (s *SecretString) GetNoRedactedString() string {
+	return s.data
 }

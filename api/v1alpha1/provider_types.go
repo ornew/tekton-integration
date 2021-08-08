@@ -29,6 +29,31 @@ type LocalSecretKeyReference struct {
 	Key *string `json:"key,omitempty"`
 }
 
+type AccessTokenSource struct {
+	// +optional
+	SecretRef *LocalSecretKeyReference `json:"secretRef,omitempty"`
+}
+
+type SlackChannel struct {
+	// The id of channel. e.g. C1234567890
+	// +kubebuilder:validation:Pattern=`^C[0-9]+$`
+	// +optional
+	ID *string `json:"id,omitempty"`
+	// The name of the channel. If an ID is specified, it will be ignored.
+	// +optional
+	Name *string `json:"name,omitempty"`
+}
+
+// SlackAppSpec represents information about an Slack App.
+type SlackAppSpec struct {
+	// +required
+	AccessToken AccessTokenSource `json:"accessToken"`
+
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	Channels []SlackChannel `json:"channels"`
+}
+
 type PrivateKeySource struct {
 	// +optional
 	SecretRef *LocalSecretKeyReference `json:"secretRef,omitempty"`
@@ -57,6 +82,8 @@ type ProviderSpec struct {
 
 	// +optional
 	GitHubApp *GitHubAppSpec `json:"githubApp,omitempty"`
+	// +optional
+	SlackApp *SlackAppSpec `json:"slackApp,omitempty"`
 }
 
 // ProviderStatus defines the observed state of Provider

@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -123,14 +122,7 @@ func (r *PipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				continue
 			}
 			logp := log.WithValues("provider", providerRef, "type", provider.Spec.Type)
-			var app providers.Provider
-			switch provider.Spec.Type {
-			case "GitHubApp":
-				app, err = providers.NewGitHubApp(ctx, &provider, r.Client)
-			default:
-				logp.Error(errors.New("unknown provider type"), "failed to resolve the provider type")
-				continue
-			}
+			app, err := providers.ResolveProvider(ctx, &provider, r.Client)
 			if err != nil {
 				logp.Error(err, "failed to create the provider app")
 				continue

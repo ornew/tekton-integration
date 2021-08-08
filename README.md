@@ -35,4 +35,18 @@ TBW
 
 ## Supported Providers
 
-TBW
+WIP
+
+### GitHub App
+
+[GitHub App](docs/providers/github.md) Provider
+
+- Notification:
+  - Set the Run status to the commit status.
+
+### Slack App
+
+[Slack App](docs/providers/slack.md) Provider
+
+- Notification:
+  - Post the status at the end of Run.

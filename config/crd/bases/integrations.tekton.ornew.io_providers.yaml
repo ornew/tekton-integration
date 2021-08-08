@@ -61,6 +61,39 @@ spec:
                 - appId
                 - privateKey
                 type: object
+              slackApp:
+                description: SlackAppSpec represents information about an Slack App.
+                properties:
+                  accessToken:
+                    properties:
+                      secretRef:
+                        properties:
+                          key:
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                        type: object
+                    type: object
+                  channels:
+                    items:
+                      properties:
+                        id:
+                          description: The id of channel. e.g. C1234567890
+                          pattern: ^C[0-9]+$
+                          type: string
+                        name:
+                          description: The name of the channel. If an ID is specified,
+                            it will be ignored.
+                          type: string
+                      type: object
+                    minItems: 1
+                    type: array
+                required:
+                - accessToken
+                - channels
+                type: object
               type:
                 description: The type of this provider.
                 maxLength: 64

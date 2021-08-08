@@ -48,7 +48,7 @@ type GitHubApp struct {
 
 var _ Provider = (*GitHubApp)(nil)
 
-func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, error) {
+func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, *ProviderError) {
 	s := p.Spec.GitHubApp
 	if s == nil {
 		return nil, NewInvalidProviderSpecError("missing value .githubApp")
@@ -76,7 +76,7 @@ func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*
 	}
 	return &GitHubApp{
 		AppId:      s.AppId,
-		PrivateKey: key,
+		PrivateKey: NewSecretBytes(key),
 		BaseURL:    s.BaseURL,
 	}, nil
 }
@@ -110,7 +110,11 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	state := toGithubCommitStatus(cond.Status)
 	description := cond.Reason
 	context := fmt.Sprintf("tekton: %s", contextID)
-	targetURL := "" // TODO will support tekton dashboard or custom link
+	targetURL := ""
+	dashboardBaseURL := pr.Annotations[annotationTektonDashboardBaseURL]
+	if len(dashboardBaseURL) > 0 {
+		targetURL = getDashboardPipelineRunURL(dashboardBaseURL, pr.Namespace, pr.Name)
+	}
 	status := &github.RepoStatus{
 		State:       &state, // pending, success, error, or failure
 		TargetURL:   &targetURL,
@@ -119,7 +123,7 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	}
 
 	tr := http.DefaultTransport
-	atr, err := ghinstallation.NewAppsTransport(tr, a.AppId, a.PrivateKey)
+	atr, err := ghinstallation.NewAppsTransport(tr, a.AppId, a.PrivateKey.GetNoRedacted())
 	if err != nil {
 		return NewRuntimeError(fmt.Sprintf("failed to get GitHub App transport: %v", err))
 	}
