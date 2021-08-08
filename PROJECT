@@ -14,15 +14,6 @@ resources:
   controller: true
   domain: tekton.ornew.io
   group: integrations
-  kind: RunIntegration
-  path: github.com/ornew/tekton-integration/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: tekton.ornew.io
-  group: integrations
   kind: Notification
   path: github.com/ornew/tekton-integration/api/v1alpha1
   version: v1alpha1
