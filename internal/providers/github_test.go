@@ -68,7 +68,7 @@ func TestNewGitHubApp(t *testing.T) {
 	for _, c := range []struct {
 		name     string
 		provider *v1alpha1.Provider
-		wantErr  *GitHubAppError
+		wantErr  *ProviderError
 	}{
 		{
 			name: "Basic",
@@ -107,7 +107,7 @@ func TestNewGitHubApp(t *testing.T) {
 				},
 				Status: v1alpha1.ProviderStatus{},
 			},
-			wantErr: &GitHubAppError{Code: ErrorCodeGitHubAppInvalidSpec},
+			wantErr: NewInvalidProviderSpecError(""),
 		},
 		{
 			name: "ValidPrivateKeyNotFound",
@@ -128,7 +128,7 @@ func TestNewGitHubApp(t *testing.T) {
 				},
 				Status: v1alpha1.ProviderStatus{},
 			},
-			wantErr: &GitHubAppError{Code: ErrorCodeGitHubAppInvalidSpec},
+			wantErr: NewInvalidProviderSpecError(""),
 		},
 		{
 			name: "SecretNotFound",
@@ -152,7 +152,7 @@ func TestNewGitHubApp(t *testing.T) {
 				},
 				Status: v1alpha1.ProviderStatus{},
 			},
-			wantErr: &GitHubAppError{Code: ErrorCodeGitHubAppPrivateKeyNotFound},
+			wantErr: NewNotFoundPrivateKeyError(""),
 		},
 		{
 			name: "SecretPrivateKeyNotFound",
@@ -176,7 +176,7 @@ func TestNewGitHubApp(t *testing.T) {
 				},
 				Status: v1alpha1.ProviderStatus{},
 			},
-			wantErr: &GitHubAppError{Code: ErrorCodeGitHubAppPrivateKeyNotFound},
+			wantErr: NewNotFoundPrivateKeyError(""),
 		},
 		{
 			name: "SecretDataNotFound",
@@ -200,7 +200,7 @@ func TestNewGitHubApp(t *testing.T) {
 				},
 				Status: v1alpha1.ProviderStatus{},
 			},
-			wantErr: &GitHubAppError{Code: ErrorCodeGitHubAppPrivateKeyNotFound},
+			wantErr: NewNotFoundPrivateKeyError(""),
 		},
 	} {
 		c := c
@@ -208,7 +208,7 @@ func TestNewGitHubApp(t *testing.T) {
 			a, err := NewGitHubApp(ctx, c.provider, k)
 			if c.wantErr != nil {
 				assert.Error(t, err)
-				var terr *GitHubAppError
+				var terr *ProviderError
 				if assert.ErrorAs(t, err, &terr) {
 					// check error code only in this test, ignore message
 					assert.Equal(t, c.wantErr.Code, terr.Code)

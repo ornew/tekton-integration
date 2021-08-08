@@ -18,7 +18,6 @@ package providers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -41,12 +40,6 @@ const (
 	annotationGitHubSHA   = "integrations.tekton.ornew.io/github-sha"
 )
 
-var (
-	errGitHubAppInvalidSpec       = errors.New("invalid spec")
-	errGitHubAppFailedToGetSecret = errors.New("failed to get secret")
-	errGitHubAppMissingPrivateKey = errors.New("missing private-key.pem")
-)
-
 type GitHubApp struct {
 	AppId      int64
 	PrivateKey []byte
@@ -56,7 +49,7 @@ type GitHubApp struct {
 func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, error) {
 	s := p.Spec.GitHubApp
 	if s == nil {
-		return nil, NewGitHubAppError(ErrorCodeGitHubAppInvalidSpec, "missing .githubApp")
+		return nil, NewInvalidProviderSpecError("missing value .githubApp")
 	}
 	var key []byte
 	if s.PrivateKey.SecretRef != nil {
@@ -66,18 +59,18 @@ func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*
 			Name:      s.PrivateKey.SecretRef.Name,
 		}
 		if err := k.Get(ctx, ref, &secret); err != nil {
-			return nil, NewGitHubAppError(ErrorCodeGitHubAppPrivateKeyNotFound, fmt.Sprintf("failed to get secret: %v", err))
+			return nil, NewNotFoundPrivateKeyError(fmt.Sprintf("failed to get secret: %v", err))
 		}
 		if secret.Data == nil {
-			return nil, NewGitHubAppError(ErrorCodeGitHubAppPrivateKeyNotFound, "data not found in secret")
+			return nil, NewNotFoundPrivateKeyError("data not found in secret")
 		}
 		if pem, ok := secret.Data["private-key.pem"]; ok {
 			key = pem
 		} else {
-			return nil, NewGitHubAppError(ErrorCodeGitHubAppPrivateKeyNotFound, "missing key private-key.pem")
+			return nil, NewNotFoundPrivateKeyError("missing key private-key.pem")
 		}
 	} else {
-		return nil, NewGitHubAppError(ErrorCodeGitHubAppInvalidSpec, "missing valid .privateKey")
+		return nil, NewInvalidProviderSpecError("missing valid values in .privateKey")
 	}
 	return &GitHubApp{
 		AppId:      s.AppId,
@@ -86,28 +79,27 @@ func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*
 	}, nil
 }
 
-func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) error {
-	log := logr.FromContext(ctx).WithName("provider.githubapp").WithValues("providerType", "GitHubApp", "pipelinerun", pr.Name)
-	log.Info("notifications github")
+func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) *ProviderError {
+	log := logr.FromContext(ctx).WithName("providers.githubapp").
+		WithValues("providerType", "GitHubApp", "pipelineRun", pr.Name)
 	contextID := pr.Annotations[annotationContextID]
 	if len(contextID) < 1 {
 		ref := pr.Spec.PipelineRef
 		if ref != nil && len(ref.Name) > 0 {
 			contextID = ref.Name
 		}
-		return fmt.Errorf("context id is not found")
+		return NewFailedValidationError("context-id or pipelineRef.name is required")
 	}
 	owner := pr.Annotations[annotationGitHubOwner]
 	repo := pr.Annotations[annotationGitHubRepo]
 	revision := pr.Annotations[annotationGitHubSHA]
 	if len(owner) < 1 || len(repo) < 1 || len(revision) < 1 {
-		err := fmt.Errorf("required annotations: %s=%s %s=%s %s=%s",
+		log.Info("missing annotations")
+		return NewFailedValidationError(fmt.Sprintf("required annotations: %s=%s %s=%s %s=%s",
 			annotationGitHubOwner, owner,
 			annotationGitHubRepo, repo,
 			annotationGitHubSHA, revision,
-		)
-		log.Error(err, "missing annotations")
-		return err
+		))
 	}
 	cond := pr.Status.GetCondition(apis.ConditionSucceeded)
 	if cond == nil {
@@ -128,8 +120,7 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	tr := http.DefaultTransport
 	atr, err := ghinstallation.NewAppsTransport(tr, a.AppId, a.PrivateKey)
 	if err != nil {
-		log.Error(err, "failed to get GitHub App transport")
-		return err
+		return NewRuntimeError(fmt.Sprintf("failed to get GitHub App transport: %v", err))
 	}
 	if a.BaseURL != nil {
 		atr.BaseURL = *a.BaseURL
@@ -137,8 +128,7 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	bearerClient := github.NewClient(&http.Client{Transport: atr})
 	ins, _, err := bearerClient.Apps.FindRepositoryInstallation(ctx, owner, repo)
 	if err != nil || ins.ID == nil {
-		log.Error(err, "failed to get GitHub App installation")
-		return err
+		return NewRuntimeError(fmt.Sprintf("failed to find GitHub App installation: %v", err))
 	}
 	itr := ghinstallation.NewFromAppsTransport(atr, *ins.ID)
 
@@ -146,43 +136,17 @@ func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun
 	if a.BaseURL != nil {
 		client, err = github.NewEnterpriseClient(itr.BaseURL, itr.BaseURL, &http.Client{Transport: itr})
 		if err != nil {
-			log.Error(err, "failed to get GitHub Enterprise API client")
-			return err
+			return NewRuntimeError(fmt.Sprintf("failed to get GitHub Enterprise API client: %v", err))
 		}
 	} else {
 		client = github.NewClient(&http.Client{Transport: itr})
 	}
 	status, _, err = client.Repositories.CreateStatus(ctx, owner, repo, revision, status)
 	if err != nil {
-		log.Error(err, "failed to set GitHub commit status")
-		return err
+		return NewRuntimeError(fmt.Sprintf("failed to set GitHub commit status: %v", err))
 	}
 	log.Info("set commit status", "status", status)
 	return nil
-}
-
-// NOTE maybe providers can have a common error type
-type GitHubAppErrorCode string
-
-const (
-	ErrorCodeGitHubAppInvalidSpec        = GitHubAppErrorCode("InvalidSpec")
-	ErrorCodeGitHubAppPrivateKeyNotFound = GitHubAppErrorCode("PrivateKeyNotFound")
-)
-
-type GitHubAppError struct {
-	Code    GitHubAppErrorCode
-	Message string
-}
-
-func (e *GitHubAppError) Error() string {
-	return fmt.Sprintf("%s (code=%s)", e.Message, e.Code)
-}
-
-func NewGitHubAppError(code GitHubAppErrorCode, msg string) error {
-	return &GitHubAppError{
-		Code:    code,
-		Message: msg,
-	}
 }
 
 const (
