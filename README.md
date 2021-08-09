@@ -51,8 +51,14 @@ the cluster, but also makes it difficult to reuse connections and credentials.
 Trigger is useful when events are infrequent, but expensive when connecting
 frequently occurring events to a typical external service.
 
-Also, since only one CloudEvents sink can be set by default, PubSub is required
-for some integrations.
+Since only one CloudEvents sink can be set by default, any PubSub is required
+for some integrations. Tekton Integrations does not require this setup.
+
+When Tekton Triggers handles CloudEvents published by Tekton,
+recursive execution can occur and consume resources unlimitedly in the cluster.
+You need to filter the events from the triggered Run, and set resource quotas
+to block unexpected many Runs. Recursively Runs does not occur
+in Tekton Integrations.
 
 ## Supported Providers
 
