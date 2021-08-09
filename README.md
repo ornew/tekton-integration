@@ -1,8 +1,15 @@
 # Tekton Integrations
 
-It provides functions to integrate Tekton with other systems (GitHub, Slack, etc).
+Tekton Integrations provides a way to integrate Tekton with external services.
 
-- `Provider` presents credentials and settings for integrating with external systems.
+Use Cases:
+
+- Sync the status of PipelineRun to the commit status on GitHub.
+- Notifies the result of PipelineRun to Slack channels.
+
+Tekton Integrations consists of CRD:
+
+- `Provider` presents credentials and settings for integrating with external services.
 - `Notification` presents how to notify the result of Run.
 
 For example:
@@ -29,24 +36,34 @@ spec:
     name: github-app
 ```
 
-## Setup
+- [Provider](docs/provider.md)
+- [Notification](docs/notification.md)
 
-TBW
+## Alternatives
+
+### CloudEvents + Tekton Triggers
+
+Tekton supports publishing CloudEvents and Tekton Triggers can handle the events.
+Certainly tektoncd/plumbing is handling CloudEvents to make up the pipeline.
+However, the status of Run changes frequently, so a custom object is created
+and the pod is launched each time. This not only uses the resources of
+the cluster, but also makes it difficult to reuse connections and credentials.
+Trigger is useful when events are infrequent, but expensive when connecting
+frequently occurring events to a typical external service.
+
+Also, since only one CloudEvents sink can be set by default, PubSub is required
+for some integrations.
 
 ## Supported Providers
 
 WIP
 
-### GitHub App
+- [GitHub App](docs/providers/github.md)
+- [Slack App](docs/providers/slack.md)
+- AWS SNS
+- GCP PubSub
+- CloudEvents
 
-[GitHub App](docs/providers/github.md) Provider
+## Setup
 
-- Notification:
-  - Set the Run status to the commit status.
-
-### Slack App
-
-[Slack App](docs/providers/slack.md) Provider
-
-- Notification:
-  - Post the status at the end of Run.
+TBW
