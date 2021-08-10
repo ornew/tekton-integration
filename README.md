@@ -43,22 +43,24 @@ spec:
 
 ### CloudEvents + Tekton Triggers
 
-Tekton supports publishing CloudEvents and Tekton Triggers can handle the events.
-Certainly tektoncd/plumbing is handling CloudEvents to make up the pipeline.
-However, the status of Run changes frequently, so a custom object is created
-and the pod is launched each time. This not only uses the resources of
-the cluster, but also makes it difficult to reuse connections and credentials.
-Trigger is useful when events are infrequent, but expensive when connecting
-frequently occurring events to a typical external service.
+Tekton publishes CloudEvents of Runs. You can also use Tekton Triggers to handle
+CloudEvents. This configuration is actually used in tektoncd/plumbing.
+Not only does this consume resources linearly, but those pods incur unnecessary
+overhead due to the difficulty of sharing credentials and connections.
+As Tekton's workload grows, API rate limiting and the number of network
+connections can be problematic.
+With Tekton Integration, you can cache your credentials on the controller to
+prevent it from making more connections than you need.
 
-Since only one CloudEvents sink can be set by default, any PubSub is required
-for some integrations. Tekton Integrations does not require this setup.
-
-When Tekton Triggers handles CloudEvents published by Tekton,
-recursive execution can occur and consume resources unlimitedly in the cluster.
-You need to filter the events from the triggered Run, and set resource quotas
-to block unexpected many Runs. Recursively Runs does not occur
-in Tekton Integrations.
+Another reason is that recursive execution may occur.
+If Tekton publishes the status of the Run to CloudEvents and Trigger occurred,
+you can see that the triggered Run also raises CloudEvents.
+Users are need to handle events carefully, such as annotating Runs resulting
+from Trigger and filtering with CEL expressions.
+In the unlikely event of recursion without properly setting resource quotas,
+the entire cluster will suffer a major failure. In my experience,
+the etcd of API server will be down, leaving the cluster out of control.
+Tekton Integrations guarantees that recursive execution will not occur.
 
 ## Supported Providers
 
