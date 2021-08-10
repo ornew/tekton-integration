@@ -34,15 +34,21 @@ spec:
 
 Create a Slack app with `Create New App` on [Your Apps](https://api.slack.com/apps).
 
+![](../images/slackapp.1.png)
+
 Open `OAuth & Permissions` tab, select `Add an OAuth Scope`.
 You need to add `chat:write`.
 This will authorize your app's bot to post to the added channel.
 The bot can't post to channels that haven't invited, so invite bots if you need them.
 Alternatively, you can give write permission to all public channels by `chat:write.public`.
 
+![](../images/slackapp.2.png)
+
 Install the app to your workspace.
 If you change the permissions after installation, you need to reinstall.
 You get the Bot User OAuth Token here. This token is an access token that starts with `xoxb-`.
+
+![](../images/slackapp.3.png)
 
 Create a Secret for Providers:
 
@@ -94,3 +100,5 @@ spec:
 ```
 
 This will send a notification to Slack when the Pipeline Run finishes running.
+
+![](../images/slackapp.4.png)

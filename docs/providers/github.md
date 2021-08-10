@@ -47,6 +47,24 @@ metadata:
 - Create a Notification
 - Run with annotations
 
+Open the [Settings > Developer settings](https://github.com/settings/apps) on GitHub.
+
+![](../images/githubapp.1.png)
+
+Select `New GitHub App` and fill your app infomation.
+
+You need to add the following permissions:
+
+- Commit statuses: Read & write
+
+After creating, make a note of the displayed App ID.
+
+![](../images/githubapp.2.png)
+
+Create a private key. **Do not lose or publish the downloaded private key.**
+
+![](../images/githubapp.3.png)
+
 Create a Secret for Providers.
 
 ```
@@ -83,3 +101,7 @@ spec:
   providerRef:
     name: github-app
 ```
+
+![](../images/githubapp.4.png)
+
+Now when you annotate Run, it will set the status on GitHub.
