@@ -57,10 +57,10 @@ If Tekton publishes the status of the Run to CloudEvents and Trigger occurred,
 you can see that the triggered Run also raises CloudEvents.
 Users are need to handle events carefully, such as annotating Runs resulting
 from Trigger and filtering with CEL expressions.
-In the unlikely event of recursion without properly setting resource quotas,
-the entire cluster will suffer a major failure. In my experience,
-the etcd of API server will be down, leaving the cluster out of control.
-Tekton Integrations guarantees that recursive execution will not occur.
+If recursion occurs without proper resource quotas,
+Run will increase exponentially and cause serious cluster-wide failure.
+In my experience, the API server etcd went down and the cluster went out
+of control for several hours. Tekton Integrations guarantees no recursive Run.
 
 ## Supported Providers
 
