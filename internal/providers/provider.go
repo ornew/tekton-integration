@@ -19,6 +19,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -49,5 +50,5 @@ func ResolveProvider(ctx context.Context, p *v1alpha1.Provider, k8s client.Clien
 }
 
 func getDashboardPipelineRunURL(base, namespace, name string) string {
-	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", base, namespace, name)
+	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", strings.TrimSuffix(base, "/"), namespace, name)
 }

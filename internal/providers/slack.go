@@ -185,7 +185,7 @@ func newSlackMessageFromPipelineRun(pr *pipelinesv1beta1.PipelineRun) *slackPost
 	dashboardBaseURL := pr.Annotations[annotationTektonDashboardBaseURL]
 	if len(dashboardBaseURL) > 0 {
 		url := getDashboardPipelineRunURL(dashboardBaseURL, pr.Namespace, pr.Name)
-		fmt.Fprintf(&context, "| <%s|open dashboard>", url)
+		fmt.Fprintf(&context, " | <%s|open dashboard>", url)
 	}
 	return &slackPostMessageRequest{
 		Fallback: fmt.Sprintf("%s: %s", reason, nn),

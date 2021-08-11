@@ -28,7 +28,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/ornew/tekton-integration/api/v1alpha1"
-	integrationsv1alpha1 "github.com/ornew/tekton-integration/api/v1alpha1"
 )
 
 // NotificationReconciler reconciles a Notification object
@@ -78,7 +77,7 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 // SetupWithManager sets up the controller with the Manager.
 func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&integrationsv1alpha1.Notification{}).
+		For(&v1alpha1.Notification{}).
 		Complete(r)
 }
 
