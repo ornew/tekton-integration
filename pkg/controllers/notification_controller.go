@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
-	"github.com/ornew/tekton-integration/api/v1alpha1"
+	"github.com/ornew/tekton-integration/pkg/api/v1alpha1"
 )
 
 // NotificationReconciler reconciles a Notification object

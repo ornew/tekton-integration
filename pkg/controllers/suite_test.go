@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	integrationsv1alpha1 "github.com/ornew/tekton-integration/api/v1alpha1"
+	integrationsv1alpha1 "github.com/ornew/tekton-integration/pkg/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

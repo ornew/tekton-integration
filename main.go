@@ -33,8 +33,8 @@ import (
 
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
-	integrationsv1alpha1 "github.com/ornew/tekton-integration/api/v1alpha1"
-	"github.com/ornew/tekton-integration/controllers"
+	integrationsv1alpha1 "github.com/ornew/tekton-integration/pkg/api/v1alpha1"
+	"github.com/ornew/tekton-integration/pkg/controllers"
 	//+kubebuilder:scaffold:imports
 )
 

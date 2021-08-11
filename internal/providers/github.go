@@ -31,7 +31,7 @@ import (
 	"github.com/google/go-github/v37/github"
 	pipelinesv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
-	"github.com/ornew/tekton-integration/api/v1alpha1"
+	"github.com/ornew/tekton-integration/pkg/api/v1alpha1"
 )
 
 const (

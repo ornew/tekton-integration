@@ -30,8 +30,8 @@ import (
 	pipelinesv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	knativeapis "knative.dev/pkg/apis"
 
-	"github.com/ornew/tekton-integration/api/v1alpha1"
 	"github.com/ornew/tekton-integration/internal/providers"
+	"github.com/ornew/tekton-integration/pkg/api/v1alpha1"
 )
 
 const (
