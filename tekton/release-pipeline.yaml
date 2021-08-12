@@ -1,0 +1,78 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: release
+spec:
+  tasks:
+  - name: release
+    taskSpec:
+      volumes:
+      - name: github-app-secret
+        secret:
+          secretName: tekton-integration-github-app
+          defaultMode: 0400
+      - name: share
+        emptyDir: {}
+      stepTemplate:
+        volumeMounts:
+        - name: share
+          mountPath: /work
+          readOnly: false
+      steps:
+      - name: auth-github-app
+        image: docker.io/ornew/tekton-integration-build-tools
+        script: |
+          set +x
+          mkdir -p /work/credentials
+          cd /work
+          APP_ID=$(cat /mnt/secrets/app-id)
+          claim=$(cat <<EOF
+          {
+            "iat": $(date -d '-1minute' +%s), "exp": $(date -d '10minute' +%s), "iss": "${APP_ID}"
+          }
+          EOF
+          )
+          bearer=$(echo $claim | jwt -key /mnt/secrets/private-key.pem -alg RS256 -sign -)
+          ins=$(curl -fsSL \
+            -H "Authorization: Bearer $bearer" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/ornew/tekton-integration/installation)
+          curl -fsSL \
+            -X POST \
+            -H "Authorization: Bearer $bearer" \
+            -H "Accept: application/vnd.github.v3+json" \
+            $(echo $ins | jq -r '.access_tokens_url') \
+            | jq -r '.token' > /work/credentials/github_token
+          cat /work/credentials/github_token | gh auth login --with-token
+        volumeMounts:
+        - name: github-app-secret
+          mountPath: /mnt/secrets
+          readOnly: true
+      - name: clone
+        image: docker.io/ornew/tekton-integration-build-tools
+        script: |
+          cat /work/credentials/github_token | gh auth login --with-token
+          VERSION=v0.0.1
+          gh repo clone ornew/tekton-integration /work/src
+          cd /work/src
+          ls -al
+      - name: make-manifests
+        image: docker.io/ornew/tekton-integration-build-tools
+        script: |
+          cd /work/src
+          VERSION=v0.0.1
+          mkdir bin
+          ln -svf /opt/bin/kustomize bin/
+          ln -svf /opt/bin/controller-gen bin/
+          ln -svf /opt/bin/setup-envtest bin/
+          make release.notag.yaml CONTROLLER_IMAGE=ghcr.io/ornew/tekton-integration
+          make release.yaml CONTROLLER_IMAGE=ghcr.io/ornew/tekton-integration VERSION=$VERSION
+      - name: create-release
+        image: docker.io/ornew/tekton-integration-build-tools
+        script: |
+          cat /work/credentials/github_token | gh auth login --with-token
+          cd /work/src
+          VERSION=v0.0.1
+          gh release create $VERSION -t "Release $VERSION"
+          gh release upload $VERSION release.notag.yaml --clobber
+          gh release upload $VERSION release.yaml --clobber
