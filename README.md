@@ -44,11 +44,16 @@ spec:
 
 WIP
 
-- [GitHub App](docs/providers/github.md)
-- [Slack App](docs/providers/slack.md)
-- AWS SNS
-- GCP PubSub
-- CloudEvents
+- Collaboration Services
+  - [GitHub App](docs/providers/github.md)
+- Communication Services
+  - [Slack App](docs/providers/slack.md)
+  - Discord
+- Messaging Services
+  - AWS SNS
+  - GCP PubSub
+- Webhook
+  - CloudEvents
 
 ## Motivation
 
