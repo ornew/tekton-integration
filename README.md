@@ -42,18 +42,22 @@ spec:
 
 ## Supported Providers
 
-WIP
+- [CloudEvents](docs/providers/cloudevents.md) (WIP)
+  - Supports authentication, authorization and validation.
 
-- Collaboration Services
-  - [GitHub App](docs/providers/github.md)
-- Communication Services
-  - [Slack App](docs/providers/slack.md)
-  - Discord
-- Messaging Services
-  - AWS SNS
-  - GCP PubSub
-- Webhook
-  - CloudEvents
+Collaboration Services
+
+- [GitHub App](docs/providers/github.md) (since v0.0.1)
+
+Communication Services
+
+- [Slack App](docs/providers/slack.md) (since v0.0.1)
+- Discord (WIP)
+
+Messaging Services
+
+- AWS SNS (WIP)
+- GCP PubSub (WIP)
 
 ## Motivation
 
