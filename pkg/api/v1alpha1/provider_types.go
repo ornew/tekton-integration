@@ -71,6 +71,73 @@ type GitHubAppSpec struct {
 	BaseURL *string `json:"baseURL,omitempty"`
 }
 
+type OAuth2Endpoints struct {
+	// +optional
+	TokenURL *string `json:"tokenURL,omitempty"`
+}
+
+type OAuth2 struct {
+	// +required
+	// +kubebuilder:validation:Required
+	GrantType string `json:"grantType"`
+	// +required
+	// +kubebuilder:validation:Required
+	Endpoints OAuth2Endpoints `json:"endpoints"`
+	// +optional
+	Scopes []string `json:"scopes,omitempty"`
+	// +optional
+	ClientAuthentication *HTTPClientAuthentication `json:"clientAuthentication"`
+	// +optional
+	AdditionalClaims map[string]string `json:"additionalClaims"`
+}
+
+type HTTPClientAuthentication struct {
+	// +optional
+	SecretRef *LocalSecretKeyReference `json:"secretRef,omitempty"`
+}
+
+type StaticToken struct {
+	// +optional
+	SecretRef *LocalSecretKeyReference `json:"secretRef,omitempty"`
+}
+
+type HTTPAuthorization struct {
+	// +optional
+	Enabled bool `json:"enabled"`
+	// +optional
+	// +kubebuilder:default:None
+	// +kubebuilder:validation:Enum=None;OAuth2;StaticToken
+	Type *string `json:"type,omitempty"`
+	// +optional
+	OAuth2 *OAuth2 `json:"oauth2,omitempty"`
+	// +optional
+	StaticToken *StaticToken `json:"staticToken,omitempty"`
+}
+
+type CloudEventsWebhookValidation struct {
+	// +optional
+	Enabled bool `json:"enabled"`
+	// +optional
+	RequestOrigin *string `json:"requestOrigin,omitempty"`
+	// +optional
+	RequestRate *int32 `json:"requestRate,omitempty"`
+}
+
+type CloudEventsWebhookSpec struct {
+	// +required
+	// +kubebuilder:validation:Required
+	URL string `json:"url"`
+	// +optional
+	Authorization HTTPAuthorization `json:"authorization"`
+}
+
+type CloudEventsSpec struct {
+	// +required
+	Protocol string `json:"protocol"`
+	// +optional
+	Webhook *CloudEventsWebhookSpec `json:"webhook,omitempty"`
+}
+
 // ProviderSpec defines the desired state of Provider
 type ProviderSpec struct {
 	// The type of this provider.
@@ -84,6 +151,8 @@ type ProviderSpec struct {
 	GitHubApp *GitHubAppSpec `json:"githubApp,omitempty"`
 	// +optional
 	SlackApp *SlackAppSpec `json:"slackApp,omitempty"`
+	// +optional
+	CloudEvents *CloudEventsSpec `json:"cloudEvents,omitempty"`
 }
 
 // ProviderStatus defines the observed state of Provider

@@ -4,6 +4,26 @@
 
 ## Provider
 
+### Webhook
+
+Minimum example:
+
+```yaml
+apiVersion: integrations.tekton.dev/v1alpha1
+kind: Provider
+metadata:
+  name: cloudevents
+  namespace: default
+spec:
+  type: CloudEvents
+  cloudEvents:
+    protocol: WebHook
+    webhook:
+      url: https://xxxxx
+```
+
+Full example:
+
 ```yaml
 apiVersion: integrations.tekton.dev/v1alpha1
 kind: Provider
@@ -18,8 +38,8 @@ spec:
     webhook:
       url: https://xxxxx
       authorization:
-        enabled: false
-        type: OAuth2 # or StaticToken
+        # None (default), OAuth2, StaticToken
+        type: OAuth2
         # We highly recommend using OAuth2.
         # Specify the token to be specified in the Authorization header.
         # You must also include the auth-schema (e.g. `Token my-access-token`).
@@ -71,7 +91,7 @@ spec:
             #
             secretRef:
               name: cloudevents-oauth2-client-authentication-values
-          jwtPayload:
+          additionalClaims:
             # The following claims will be set automatically:
             # - iss ... client-id from clientAuthentication
             # - sub ... client-id from clientAuthentication

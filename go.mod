@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/bradleyfalzon/ghinstallation v1.1.1
+	github.com/cloudevents/sdk-go/v2 v2.5.0
+	github.com/coocood/freecache v1.1.1
 	github.com/go-logr/logr v0.4.0
 	github.com/google/go-github/v37 v37.0.0
 	github.com/onsi/ginkgo v1.16.4
