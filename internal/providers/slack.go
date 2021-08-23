@@ -47,7 +47,7 @@ type SlackApp struct {
 
 var _ Provider = (*SlackApp)(nil)
 
-func NewSlackApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*SlackApp, *ProviderError) {
+func NewSlackApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*SlackApp, error) {
 	s := p.Spec.SlackApp
 	if s == nil {
 		return nil, NewInvalidProviderSpecError("missing value .slackApp")
@@ -98,7 +98,7 @@ func postHTTP(url string, auth string, payload interface{}) (*http.Response, err
 	return resp, nil
 }
 
-func (a *SlackApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) *ProviderError {
+func (a *SlackApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) error {
 	log := logr.FromContext(ctx).WithName("providers.slackapp").
 		WithValues("providerType", "SlackApp", "pipelineRun", pr.Name)
 	cond := pr.Status.GetCondition(apis.ConditionSucceeded)

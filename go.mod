@@ -8,6 +8,7 @@ require (
 	github.com/coocood/freecache v1.1.1
 	github.com/go-logr/logr v0.4.0
 	github.com/google/go-github/v37 v37.0.0
+	github.com/google/uuid v1.2.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
 	github.com/stretchr/testify v1.7.0
