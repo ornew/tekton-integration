@@ -34,10 +34,10 @@ const (
 )
 
 type Provider interface {
-	Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) *ProviderError
+	Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) error
 }
 
-func ResolveProvider(ctx context.Context, p *v1alpha1.Provider, k8s client.Client) (app Provider, err *ProviderError) {
+func ResolveProvider(ctx context.Context, p *v1alpha1.Provider, k8s client.Client) (app Provider, err error) {
 	switch p.Spec.Type {
 	case "GitHubApp":
 		app, err = NewGitHubApp(ctx, p, k8s)

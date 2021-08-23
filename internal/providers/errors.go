@@ -32,6 +32,8 @@ type ProviderError struct {
 	Message string
 }
 
+var _ error = (*ProviderError)(nil)
+
 func (e *ProviderError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }

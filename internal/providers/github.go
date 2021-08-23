@@ -48,7 +48,7 @@ type GitHubApp struct {
 
 var _ Provider = (*GitHubApp)(nil)
 
-func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, *ProviderError) {
+func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*GitHubApp, error) {
 	s := p.Spec.GitHubApp
 	if s == nil {
 		return nil, NewInvalidProviderSpecError("missing value .githubApp")
@@ -81,7 +81,7 @@ func NewGitHubApp(ctx context.Context, p *v1alpha1.Provider, k client.Client) (*
 	}, nil
 }
 
-func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) *ProviderError {
+func (a *GitHubApp) Notify(ctx context.Context, pr *pipelinesv1beta1.PipelineRun) error {
 	log := logr.FromContext(ctx).WithName("providers.githubapp").
 		WithValues("providerType", "GitHubApp", "pipelineRun", pr.Name)
 	contextID := pr.Annotations[annotationContextID]
